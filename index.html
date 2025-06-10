@@ -72,12 +72,11 @@
               other_conn.send(conn_message);
             }
           };
-		const sound = new Audio ("pa1.mp3");
           const appendMessage = (text) => {
             const element = document.createElement("p");
             element.textContent = text;
             messages.append(element);
-			sound.play();
+			new Audio ("pa1.mp3").play();
           };
 
           (async () => {
