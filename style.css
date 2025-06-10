@@ -15,7 +15,6 @@
 
 .chat::-webkit-scrollbar-track {
   background: var(--sb-track-color);
-  border-radius: 12px;
 }
 
 .chat::-webkit-scrollbar-thumb {
@@ -45,6 +44,10 @@ main {
   margin: 0 auto;
   font-family: Helvetica, Arial, Sans, sans-serif;
   color: #eee;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding-bottom: 10px;
 }
 
 .user-count span {
@@ -72,11 +75,11 @@ h1 {
 .chat {
   content: '';
   width: 100%;
-  height: calc(100vh - 165px);
   background: #24272e;
   padding: 5px 10px;
   overflow: scroll;
   overflow-x: hidden;
+  flex-grow: 1;
 }
 
 
@@ -104,7 +107,7 @@ button:hover {
 
 @media all and (min-width: 500px) {
   .chat {
-    height: calc(100vh - 140px);
+
   }
   input {
     width: calc(100% - 160px);
