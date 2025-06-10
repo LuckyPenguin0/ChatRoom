@@ -3,6 +3,35 @@
   transition: all .3s ease;
 }
 
+.chat {
+  --sb-track-color: #2d2f36;
+  --sb-thumb-color: #9fa0a2;
+  --sb-size: 13px;
+}
+
+.chat::-webkit-scrollbar {
+  width: var(--sb-size)
+}
+
+.chat::-webkit-scrollbar-track {
+  background: var(--sb-track-color);
+  border-radius: 12px;
+}
+
+.chat::-webkit-scrollbar-thumb {
+  background: var(--sb-thumb-color);
+  border-radius: 12px;
+  border: 3px solid #2d2f36;
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  .chat {
+    scrollbar-color: var(--sb-thumb-color)
+                     var(--sb-track-color);
+  }
+}
+
+
 html, body {
   background: #2d2f36;
   width: 100%;
@@ -46,7 +75,11 @@ h1 {
   height: calc(100vh - 165px);
   background: #24272e;
   padding: 5px 10px;
+  overflow: scroll;
+  overflow-x: hidden;
 }
+
+
 
 .chat p {
   margin: 0 0 5px 0;

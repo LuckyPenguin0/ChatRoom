@@ -74,8 +74,9 @@
           };
           const appendMessage = (text) => {
             const element = document.createElement("p");
-            element.textContent = text;
+            element.textContent = "User: " + text;
             messages.append(element);
+			messages.scrollTop = messages.scrollHeight; 
 			new Audio ("pa1.mp3").play();
           };
 
@@ -106,6 +107,7 @@
               }
 
               form.addEventListener("submit", (ev) => {
+			  if (message.value != "") {
                 try {
                   if (isHost) {
                     appendMessage(message.value);
@@ -119,7 +121,9 @@
                 } catch (e) {
                   console.error(e);
                 }
+				}
                 ev.preventDefault();
+				
               });
 
               if (isHost) {
