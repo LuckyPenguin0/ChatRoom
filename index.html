@@ -1,43 +1,63 @@
 <!DOCTYPE html>
 <html>
     <head>
-	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-	<link rel="stylesheet" href="style.css">
         <title>ChatRoom</title>
+    	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    	<link rel="stylesheet" href="style.css">
     </head>
     <body>
-	<main>
-
-  <header>
-    <div class="chat-header">
-     <h1>Chat</h1>
-       <div  class="user-count">
-          <span>People: </span>
-          <span id="count"> 1 </span>
-      </div>
-    </div>
-  </header>
-
-  <section class="chat" id="messages">
-  </section>
-
-  <form id="form">
-    <input type="text" placeholder="Say something nice" id="message"/>
-    <button type="submit">Send</button>
-  </form>
-</main>
+    	<main>
+            <header>
+                <div class="chat-header">
+                <h1>Chat</h1>
+                <div  class="user-count">
+                    <span>People: </span>
+                    <span id="count"> 1 </span>
+                </div>
+                </div>
+            </header>
+            <section class="chat" id="messages">
+            </section>
+            <form id="form">
+                <input type="text" placeholder="Say something nice" id="message"/>
+                <button type="submit">Send</button>
+            </form>
+        </main>
 
         <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
         <script>
-          const HOST_ID = "1bbe0a41-5201-4902-8ea3-194796eeaa0d";
+            const HOST_ID = "1bbe0a41-5201-4902-8ea3-194796eeaa0d";
 
-          const form = document.getElementById("form");
-          const count = document.getElementById("count");
-          const message = document.getElementById("message");
-          const messages = document.getElementById("messages");
+            const formElement = document.getElementById("form");
+            const countElement = document.getElementById("count");
+            const messageElement = document.getElementById("message");
+            const messagesElement = document.getElementById("messages");
 
-          const newPeer = async () => {
-            return new Promise((resolve, reject) => {
+            let messages = [];
+            let conns = [];
+            let isHost = false;
+
+            formElement.addEventListener("submit", (ev) => {
+              if (messageElement.value != "") {
+                try {
+                  if (isHost) {
+                    appendMessage(messageElement.value, true);
+                    console.log(conns);
+                    for (const other_conn of conns) {
+                      sendMessage(other_conn);
+                    }
+                  } else {
+                    sendMessage(conns[0]);
+                  }
+                  messageElement.value = "";
+                } catch (e) {
+                  console.error(e);
+                }
+              }
+              ev.preventDefault();
+            });
+
+            const newPeer = () => new Promise((resolve, reject) => {
               try {
                 const peer = new Peer(HOST_ID);
                 peer.on("open", () => {
@@ -59,104 +79,98 @@
                 reject(e);
               }
             });
-          };
 
-          const sendMessage = (conn) => {
-            console.log(`Sending ${message.value} to ${conn.peer}`);
-            conn.send(JSON.stringify({ type: "msg", data: message.value }));
-          };
-
-          const updateCount = (conns) => {
-            const conn_message = JSON.stringify({ type: "conn", data: conns.length + 1 });
-            for (const other_conn of conns) {
-              other_conn.send(conn_message);
-            }
-          };
-          const appendMessage = (text) => {
-            const element = document.createElement("p");
-            element.textContent = "User: " + text;
-            messages.append(element);
-			messages.scrollTop = messages.scrollHeight; 
-			new Audio ("pa1.mp3").play();
-          };
-
-          (async () => {
-            try {
-              const [peer, isHost] = await newPeer();
-              let conns = [];
-              console.log(`My peer ID is: ${peer.id}`);
-
-              if (!isHost) {
-                console.log(`Connecting to ${HOST_ID}...`);
-
-                const conn = peer.connect(HOST_ID);
-                conn.on("open", () => console.log("Connected!"));
-                conn.on("close", () => {
-                  window.location.reload();
-                });
-                conn.on("data", (data) => {
-                  const event = JSON.parse(data);
-                  console.log(event);
-                  if (event.type == "msg") {
-                    appendMessage(event.data);
-                  } else {
-                    count.textContent = event.data;
-                  }
-                });
-                conns.push(conn);
+            const sendMessage = (conn) => {
+              console.log(`Sending ${messageElement.value} to ${conn.peer}`);
+              conn.send(JSON.stringify({ type: "msg", data: messageElement.value }));
+            };
+            const appendMessage = (text, sound) => {
+              const element = document.createElement("p");
+              element.textContent = "User: " + text;
+              messagesElement.append(element);
+              messagesElement.scrollTop = messagesElement.scrollHeight;
+              if (sound) {
+                new Audio ("pa1.mp3").play();
               }
+              messages.push(text);
+            };
+            const updateCount = (conns) => {
+              const conn_message = JSON.stringify({ type: "conn", data: conns.length + 1 });
+              for (const other_conn of conns) {
+                other_conn.send(conn_message);
+              }
+            };
 
-              form.addEventListener("submit", (ev) => {
-			  if (message.value != "") {
-                try {
-                  if (isHost) {
-                    appendMessage(message.value);
-                    for (const other_conn of conns) {
-                      sendMessage(other_conn);
-                    }
-                  } else {
-                    sendMessage(conns[0]);
-                  }
-                  message.value = "";
-                } catch (e) {
-                  console.error(e);
-                }
-				}
-                ev.preventDefault();
-				
-              });
+            const app = () => new Promise(async (resolve, reject) => {
+              try {
+                conns = [];
+                const result = await newPeer();
+                const peer = result[0];
+                isHost = result[1];
+                console.log(`My peer ID is: ${peer.id}, host: ${isHost}`);
 
-              if (isHost) {
-                peer.on("connection", (conn) => {
-                  console.log(`Adding connection ${conn.peer}...`);
-                  conn.on("open", () => {
-                    conns.push(conn);
-                    count.textContent = conns.length + 1;
-                    updateCount(conns);
-                    console.log(`Added connection ${conn.peer}`);
+                if (isHost) {
+                  peer.on("connection", (conn) => {
+                    console.log(`Adding connection ${conn.peer}...`);
+                    conn.on("open", () => {
+                      conns.push(conn);
+                      count.textContent = conns.length + 1;
+                      updateCount(conns);
+                      conn.send(JSON.stringify({ type: "hello", data: messages }))
+                      console.log(`Added connection ${conn.peer}`);
+                    });
+
+                    conn.on("data", (data) => {
+                      console.log(`Broadcasting message ${data}`);
+                      const event = JSON.parse(data);
+                      if (event.type == "msg") {
+                        for (const other_conn of conns) {
+                          other_conn.send(data);
+                        }
+                        appendMessage(event.data, true);
+                      }
+                    });
+                    conn.on("close", () => {
+                      console.log(`Removed connection ${conn.peer}`);
+                      conns = conns.filter((c) => c.peer != conn.peer);
+                      count.textContent = conns.length + 1;
+                      updateCount(conns);
+                    });
                   });
+                } else {
+                  console.log(`Connecting to ${HOST_ID}...`);
 
-                  conn.on("data", (data) => {
-                    console.log(`Broadcasting message ${data}`); 
-					const event = JSON.parse(data);
-                    for (const other_conn of conns) {
-                      other_conn.send(data);
-                    }
-                    appendMessage(event.data);
-                  });
+                  const conn = peer.connect(HOST_ID);
+                  conn.on("open", () => console.log("Connected!"));
                   conn.on("close", () => {
-                    console.log(`Removed connection ${conn.peer}`);
-                    conns = conns.filter((c) => c.peer != conn.peer);
-                    count.textContent = conns.length + 1;
-                    updateCount(conns);
-				                      
+                    console.log("finding new host");
+                    peer.destroy();
+                    resolve(true);
                   });
-                });
+                  conn.on("data", (data) => {
+                    const event = JSON.parse(data);
+                    console.log(event);
+                    if (event.type == "hello") {
+                      messages = [];
+                      messagesElement.innerHTML = "";
+                      for (const msg of event.data) {
+                        appendMessage(msg, false);
+                      }
+                    } else if (event.type == "msg") {
+                      appendMessage(event.data, true);
+                    } else if (event.type == "conn") {
+                      countElement.textContent = event.data;
+                    }
+                  });
+                  conns.push(conn);
+                }
+              } catch(e) {
+                console.error(e);
+                reject(e);
               }
-            } catch (e) {
-              console.error(e);
-            }
-          })();
+            });
+
+            (async () => { while (await app()); })();
         </script>
     </body>
 </html>
